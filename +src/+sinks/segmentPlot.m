@@ -21,32 +21,33 @@ function res = segmentPlot(signal, timeVec, chpVec, options)
   assert(~isempty(chpVec));
   
   % .external code. Defines plot properties
-  [fig1, ax1, dc] = fig_open();
+  %[fig1, ax1, dc] = fig_open();
   
   chpVec = sort(chpVec);
   
   % .prepare segments
   [interv, meanVec] = segmentStat(signal, chpVec);
   
-  %figure('Name', 'Segment Plot', 'NumberTitle', 'off');
-  plot(ax1, timeVec, signal, '.black', ...
+  figure('Name', 'Segment Plot', 'NumberTitle', 'off', 'Position', [10 10 1000 1000]);
+  plot(timeVec, signal, '.black', ...
     'LineWidth',2.5, ...
     'MarkerSize',4);
   for iO = 1:length(chpVec)
-    xline(ax1, timeVec(chpVec(iO)), ':black', 'LineWidth', 2)
+    xline(timeVec(chpVec(iO)), ':black', 'LineWidth', 2)
   end
+  hold on
   for iN = 1:size(interv,1)
     actTime = timeVec(interv(iN,1):interv(iN,2));
-    actMean = ones(length(actTime),1).*meanVec(iN);
-    plot(ax1, actTime, actMean, '-black', 'LineWidth', 4)
+    actMean = ones(numel(actTime),1) .* meanVec(iN);
+    plot(actTime, actMean, '-black', 'LineWidth', 4)
   end
         
   xlabel(options.mXlabel);
   ylabel(options.mYlabel);
   
-  fig1.Visible = "on";
-  dc.Enable = "off";
-  dc.DisplayStyle = "window"; 
+  %fig1.Visible = "on";
+  %dc.Enable = "off";
+  %dc.DisplayStyle = "window"; 
   hold off
   
   % .results

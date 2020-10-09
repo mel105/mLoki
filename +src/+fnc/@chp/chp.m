@@ -96,26 +96,49 @@ classdef chp < handle
   methods (Access = public)
     
     %> @details Class constructor
-    function obj = chp(datObj, prob, ciProb, limDep)
+    function obj = chp(datObj, prob, ciProb, limDep, detrendStatus, deseas, iB, iE)
       
-      assert(~isempty(datObj))
-      
+      % .get data
       mTable = datObj.getTable();
+      assert(~isempty(mTable), "No input data in the process of change point detection!")
+      assert(iB > 0, "iB is non-possitive. Change the iB setting!");
+      assert(iE <= height(mTable), "iE index is heigher that the data table length!")
       
-      if ~isempty(mTable)
+      % .access data in mTable respecting the iB and iE indexes
+      mTable = mTable(iB:iE, :);
+      
+      % .if detrended series is requested, then
+      if detrendStatus
         
-        obj.analSeries = mTable.Val;
-        obj.prob = prob;
-        obj.ciProb = ciProb;
-        obj.limitDependence = limDep;
-        %obj.analSeries = [1; 1; 2; 6; 5];
+        assert(~isempty(mTable.Detrend), "No Input detrended data!")
         
-        % process the change point detection in the 'analSeries'
-        processDetection(obj);
+        if deseas == "medianFilter" || deseas == "lsqFilter"
+          
+          obj.analSeries = mTable.Deseasonal;
+        else
+          
+          obj.analSeries = mTable.Detrend;
+        end
       else
-        
-        error('No input data in the process of detection!');
+                
+        if deseas == "medianFilter" || deseas == "lsqFilter"
+          
+          obj.analSeries = mTable.Deseasonal;
+        else
+          
+          obj.analSeries = mTable.Val;
+        end
       end
+      
+      % .settings
+      
+      obj.prob = prob;
+      obj.ciProb = ciProb;
+      obj.limitDependence = limDep;
+      %obj.analSeries = [1; 1; 2; 6; 5];
+      
+      % process the change point detection in the 'analSeries'
+      processDetection(obj);
       
     end
     
@@ -130,6 +153,11 @@ classdef chp < handle
         
         fprintf("c: Version of 'chp': %s - Last update: %s\n", obj.Version, obj.LastUpdate);
       end
+    end
+    
+    function acfOut = getNormAcf(obj)
+      
+      acfOut = obj.normAcf;
     end
     
     function shiftOut = getShift(obj)
@@ -168,6 +196,11 @@ classdef chp < handle
     function stat = getStatus(obj)
       
       stat = obj.analSeriesStatus;
+    end
+    
+    function sigS = getSigmaStar(obj)
+      
+      sigS = obj.sigmaS;
     end
     
   end
@@ -321,7 +354,7 @@ classdef chp < handle
       
       N = length(obj.normalSeries);
       L = ceil( N^(1/3));
-      acf = xcov(obj.normalSeries, 'biased');  obj.normAcf = acf(N); % ToDo: Over, ze ci nemam ist od N+1. N je ako keby lag 0 a tam by mala byt vzdy 1 (v normalized)
+      acf = xcov(obj.normalSeries, 'normalized');  obj.normAcf = acf(N+1); 
       wgt = ones(1, L) - ((1:L) / L);
       
       f0est = acf(N) + 2.0 * wgt * acf(N + 1 : N + L);
@@ -397,7 +430,7 @@ classdef chp < handle
       
       obj.skSq = sqrt((cMat + CMat) ./ (N-2));
       
-      obj.tkVec =  obj.cstIdxVec .* (z - Z) ./ obj.skSq;
+      obj.tkVec =  abs(obj.cstIdxVec .* (z - Z) ./ obj.skSq);
       
       [obj.maxT, obj.idxT] = max(obj.tkVec);
       %plot(obj.tkVec)
