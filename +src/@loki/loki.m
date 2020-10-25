@@ -12,14 +12,12 @@ classdef loki < handle
   % Version [0 1 5] 05.2020 First implementation of median filter
   % Version [0 1 6] 07.2020 Linear trend regression implementation (reg. coef, detrend)
   % Version [0 2 0] 07.2020 Multi-Change point process implementation
-  % Version [0 2 1] 08.2020 Segmentation plot
-    
+      
   properties(Constant)
     
-    Version = "[0 2 1]";
+    Version = "[0 2 0]";
     
     LastUpdate = "2020-08-10";
-        
   end
   
   properties (SetAccess = protected, Hidden)
@@ -34,9 +32,6 @@ classdef loki < handle
   end
     
   properties (SetAccess = protected)
-    
-    %> @details print Version of classes/functions
-    %getVersionStatus = false;
     
     %> @details
     FileName
@@ -89,19 +84,14 @@ classdef loki < handle
     %> @details 
     multiChangePoint % True - analyse multi-change point if exist
         
-    %> @details 
-    segmentPlot % True - plot segmentation
-    
+    %> @details
     resTable = table();
   end
   
   
   methods (Access = public)
     
-    %> @brief Konstruktor triedy
-    %> @details
-    %> @param
-    %> @retval obj - object of class TemplateModule
+    %> .class constructor
     function obj = loki(us)
       
       if (~nargin)
@@ -115,13 +105,14 @@ classdef loki < handle
       obj.manageProcess()     
     end
     
-    
+    % .public functions
+    % .get the matrix of results. Results are given in matlab table format.
     function resTable = getResTable(obj)
      
       resTable = obj.resTable;
     end
     
-    
+    % .get functions/classes version
     function getVersion(obj)
       % Static method: prints a Version of all classes or functions (if exists)
             
@@ -158,51 +149,65 @@ classdef loki < handle
   
   methods (Access = private)
     
+    % .set statistical criteria
     function setProb(obj)
       
       obj.prob = 1.0 - obj.sigLevel;
       obj.confInterProb = 1.0 - obj.sigLevel/2; % two-side test
     end
     
+    % .check user setting
     function checkUserSetting(obj, us)
       
-      % Must be as input
+      % .name of input file
       assert(us.fileName~= "" || ~isstring(us.fileName), ... 
-         "(101)::No file on input!");
+         "loki::No input file!");
       
+       % .TODO: check the file existence in 'dat' folder
        obj.FileName = us.fileName;
        
-       % Check epochFmt
+       % .check input data's epoch format
        if(us.epochFmt == "")
+         
          obj.EpochFmt = "Idx";
        else
+         
          obj.EpochFmt = us.epochFmt;
        end
        
-       % Check foldName
+       % .check folder name
        if(us.foldName == "")
+         
          obj.FoldName = "dat";
        else
+         
          obj.FoldName = us.foldName;
        end
        
-       % Check significant level
+       % .check significant level parameter setting
        if us.sigLevel < 0.0 || us.sigLevel > 1.0
-         warning('Wrong value of Significant Level setting (must be defined in interval (0,1)). Default value of 0.95 is used!');
+         war_msg = ['Wrong value of significant level parameter setting. '...
+                     'Parameter must be defined in interval (0,1). '...
+                     'Default value of 0.95 is used!'];
+         warning(war_msg);
          obj.sigLevel = 0.05;
        else
          obj.sigLevel = us.sigLevel;
        end
               
-       % Check limit dependence
+       % .check limit dependence. Parameter is used in case of critical value estimation. If acf
+       % parameter in lag = 1 is over the limitDependence parameter, then the critical value depends
+       % on 'sigma star' estimation.
        if us.limitDependence < 0.0 || us.limitDependence > 1.0
-         warning('Wrong value of Limit Dependence setting (must be given in interval (0,1)). Default value of 0.4 is used!');
+         war_msg = ['Wrong value of limit dependence parameter setting. '...
+                    'Parameter is given in interval (0,1). Default value of 0.4 is used!'];
+         warning(war_msg);
          obj.limitDependence = .4;
        else
          obj.limitDependece = us.limitDependence;
        end
        
-       % Check filtring model
+       % .check the method for seasonal model elimination
        if ~isempty(us.filterModel)
          
          if us.filterModel == "medianFilter" || us.filterModel == "lsqFilter"
@@ -214,10 +219,10 @@ classdef loki < handle
          end
        else
          
-         % Original series is analysed
+         % .original series is analysed
        end
        
-       % Check detrendData setting
+       % .check the method for trend elimination
        switch us.detrendData
          
          case true
@@ -225,11 +230,11 @@ classdef loki < handle
            obj.detrendModel = us.detrendData;
          otherwise
              
-           % trend removing is not requested!
+           % .trend removing is not requested!
        end
          
        
-       % Check multichange point setting
+       % .check multi-change point setting
        if ~isempty(us.multiChangePoint)
          
          obj.multiChangePoint = us.multiChangePoint;
@@ -239,55 +244,52 @@ classdef loki < handle
          obj.multiChangePoint = false;
        end
       
-       % Check time resolution
+       % .check time resolution
        if us.timeResolution ~= 0
          
          obj.timeResolution = us.timeResolution;
        end
        
-        % Check if segment plot is true
-       if us.segmentPlot == true
-         
-         obj.segmentPlot = us.segmentPlot;
-       else
-         
-         obj.segmentPlot = false;
-       end
     end
     
+    % .function for chnage point detection process managing
     function manageProcess(obj)
       
-      % Load data
+      % .load data
       obj.loadData();
       
-      % Prepare data table
+      % .prepare data table
       obj.prepData();
       
-      % .If requested, remove linear trend from the data
+      % .if requested: remove linear trend from the data
       if obj.detrendModel
         
         obj.detrendData();
       end
       
+      % .if requested: remove seasonal model from the data
       switch obj.filterModel
         
+        % .use median year model
         case "medianFilter"
           
           obj.medianFilter();
+        % .use LSQ for seasonal data filter  
         case "lsqFilter"
           
+          % not tested
           %obj.lsqFilter();
         otherwise
           
-          % mala by sa spracovat originalna rada.
+          % original data should be analysed (without any seasonal model elimination): not tested
+          % yet.
       end
       
-      % {
-      % Call method for change point detection
+      % .call method for change point detection
       obj.changePointDetection();
-      % }
     end
     
+    % .manager function: trend elimination from the original data 
     function detrendData(obj)
       
       % .call method to linear trend estimation
@@ -297,44 +299,26 @@ classdef loki < handle
       obj.prepObj.setNewCol(detr.detrendedSeries, "Detrend");
     end
     
+    % .manager function: seasonal model elimination from the original data.
     function medianFilter(obj)
       
-      %[medianSeries, filtredSeries] = src.medianFilter.medianFilter(obj.prepObj);
       deseas = src.medianFilter.medianFilter(obj.prepObj, obj.timeResolution, obj.detrendModel);
     
-      %plot(obj.prepObj.getTable.Detrend)
-      %hold on
-      %plot(deseas.medianSeries)
-      %hold on
-      %plot(deseas.filtredSeries)
-      
       % .prepObj.dataTable contains new column with detrended data.
       obj.prepObj.setNewCol(deseas.filtredSeries, "Deseasonal");
     end
     
     function changePointDetection(obj)
       
-      %resTable = table();
       res = [];
       iNo = 1;
       
       obj.chpObj = src.fnc.chp(obj.prepObj, obj.prob, obj.confInterProb, obj.limitDependece, ...
         obj.detrendModel, obj.filterModel, 1, height(obj.prepObj.getTable));
 
-      [maxTOut, idxTOut, m1, m2] = obj.chpObj.getChpp;
-      % results on screen
-      %{
-      fprintf("Velkost orig. suboru: %4.0f vs. velkost tk vec %4.0f \n", ...
-        length(obj.chpObj.getAnalSeries), length(obj.chpObj.getTkVec));
-      fprintf("change point estimation: maxTk %4.3f idx(maxTk) %4.0f  mean(bf) %4.3f  mean(aft)  %4.3f \n", maxTOut, idxTOut, m1, m2);
-      fprintf("critical value: %4.3f \n",obj.chpObj.getCriticalValue);
-      fprintf("p-value: %4.3f \n",obj.chpObj.getPVal);
-      fprintf("Shift: %4.3f \n",obj.chpObj.getShift);
-      fprintf("Status: %4.0f \n",obj.chpObj.getStatus);
-      %}
+      [maxTOut, idxTOut, ~, ~] = obj.chpObj.getChpp;
       
       if obj.chpObj.getStatus
-        
         
         res = [res; iNo, 1, height(obj.prepObj.getTable), ...
           height(obj.prepObj.getTable), idxTOut, maxTOut, obj.chpObj.getCriticalValue, ...
@@ -343,39 +327,17 @@ classdef loki < handle
         iNo = iNo + 1;
       end
       
-      %{
-      figure(100)
-      plot(obj.prepObj.getTable.Mjd, obj.prepObj.getTable.Val, '.')
-      xlabel("TIME [MJD]")
-      ylabel("X Crd")
-      
-      figure(200)
-      subplot(2,1,1)
-      plot(obj.chpObj.getAnalSeries, '.')
-      hold on
-      xline(idxTOut, '-r')
-      subplot(2,1,2)
-      plot(obj.chpObj.getTkVec,'.')
-      hold on
-      yline(obj.chpObj.getCriticalValue, '-black')
-      hold on
-      xline(idxTOut, '-r')
-      %}
-      
       % .multi-change point
       if obj.multiChangePoint == true && obj.chpObj.getStatus
         
-        disp("Multi-Cahnge point detection")
-      
         idxVec = [1; idxTOut;length(obj.chpObj.getAnalSeries)];
         
-        statInter = []; % interval, kde cast casovej rady je uz stacionarna.
+        % .intervals of time series when the series is stationary
+        statInter = []; 
         interMat = src.fnc.support.prepareIntervals(idxVec, statInter);
         
         while (~isempty(interMat))
           
-          %fprintf('\nIteration No: %2.0f\n', iNo);
-        
           idxIt = 1;
           n = size(interMat, 1);
         
@@ -401,48 +363,30 @@ classdef loki < handle
               % .new suspected change point index.
               if obj.chpObj.getStatus == 1
                 
-                %{
-                fprintf('\nAnalysed series from idx %4.0f to idx %4.0f: %4.0f - with status %4.0f\n', ...
-                  jBeg, jEnd, idxTOut, obj.chpObj.getStatus);
-                %}
                 idxVec = [idxVec; idxTOut];
                 
                 res = [res; iNo, jBeg, jEnd, ...
                   jEnd - jBeg + 1, idxTOut, maxTOut, obj.chpObj.getCriticalValue, ...
                   obj.chpObj.getNormAcf, obj.chpObj.getPVal, obj.chpObj.getSigmaStar];
-                
-                %obj.resTable = [obj.resTable; {res}];
               else
                 
-                %{
-                fprintf('\nAnalysed series from idx %4.0f to idx %4.0f: %4.0f - with status %4.0f\n', ...
-                  jBeg, jEnd, idxTOut, obj.chpObj.getStatus);
-                %}
-                
+                % .statInter matrix update
                 statInter = [statInter; jBeg, jEnd];
-                %ifd = idxVec==jBeg; idxVec(ifd) = [];
               end
               
               idxIt = idxIt + 1;
               
-              %{
-              fprintf("Velkost orig. suboru: %4.0f vs. velkost tk vec %4.0f \n", ...
-                length(obj.chpObj.getAnalSeries), length(obj.chpObj.getTkVec));
-              [maxTOut, idxTOut, m1, m2] = obj.chpObj.getChpp;
-              fprintf("change point estimation: maxTk %4.3f idx(maxTk) %4.0f  mean(bf) %4.3f  mean(aft)  %4.3f \n", maxTOut, idxTOut, m1, m2);
-              fprintf("critical value: %4.3f \n",obj.chpObj.getCriticalValue);
-              fprintf("p-value: %4.3f \n",obj.chpObj.getPVal);
-              fprintf("Shift: %4.3f \n",obj.chpObj.getShift);
-              fprintf("Status: %4.0f \n",obj.chpObj.getStatus);
-              %}
+              fI = interMat(:,1) == jBeg;
               
-              fI = interMat(:,1)==jBeg;
+              % .interMat update
               interMat(fI,:) = [];
             end
             
+            % .interMat update
             interMat = src.fnc.support.prepareIntervals(idxVec, statInter);
             
             if obj.chpObj.getStatus
+              
               iNo = iNo + 1;
             end
             
@@ -452,108 +396,33 @@ classdef loki < handle
         
       end
       
+      % .CritVal/maxTk
       res(:,11) = res(:,7)./res(:,6);
+      % .100*(1-CritVal/maxTk)
       res(:,12) = 100 * (1 - res(:,11));
+      % .N/N_Tot
       res(:,13) = res(:,4)./height(obj.prepObj.getTable);
+      % 100*(1-CritVal/maxTk)*N/N_Tot
       res(:,14) = res(:,12) .* res(:,13);
       
       obj.resTable = array2table(res);
-      obj.resTable.Properties.VariableNames = {'Idx', 'Beg', 'End', 'N', 'ChpIdx', 'maxTk', 'CritVal',...
-        'NormAcf', 'pVal', 'Sigma*', 'CritVal/maxTk', '100*(1-CritVal/maxTk)', 'N/N_Tot',...
-        '100*(1-CritVal/maxTk)*N/N_Tot'};
+      obj.resTable.Properties.VariableNames = {'Idx', 'Beg', 'End', 'N', 'ChpIdx', 'maxTk', ...
+        'CritVal', 'NormAcf', 'pVal', 'Sigma*', 'CritVal/maxTk', '100*(1-CritVal/maxTk)', ...
+        'N/N_Tot', '100*(1-CritVal/maxTk)*N/N_Tot'};
       
-      
-%      src.sinks.segmentPlot(obj.prepObj.getTable.Detrend, ...
-%        obj.prepObj.getTable.Mjd,...
-%       res(:,5), "mXlabel", "Time [MJD]");
-      
-      %{
-      
-      %disp(res(:,1:10))
-      
-      %fR = res(:,14)>10;
-      %reduChpIdx = [res(fR, 5), res(fR, 13)];
-      %gopeAntenna = [51486; 51749; 51821; 53755; 53930; 55179];
-      %gopeReceiver = [50609; 50618; 51486; 51749; 51821; 52108; 55179; 55336];
-      
-      origChpIdx = res(:,5);
-      
-      src.sinks.segmentPlot(obj.prepObj.getTable.Detrend, ...
-        obj.prepObj.getTable.Mjd,...
-        origChpIdx, "mXlabel", "Time [MJD]");
-      
-      % .este odstranim tie podozrive chp odhady, ktorych n < 400 (mozno by tam mohla byti podmienka, ze v zavislosti na rozliseni, aby rada obsahovala viacej ako jeden rok.)
-      idxSmallNum = res(:,4) < 400;
-      res(idxSmallNum,:) = [];
-      origChpIdx = res(:,5);
-            
-      import src.fnc.support.*
-      [interv, meanVec] = segmentStat(obj.prepObj.getTable.Detrend, origChpIdx);
-      
-      % .Penalty calculations
-      % C = sum_tauI+1^TauI ( Xt - mean)^2
-      cost = zeros(size(interv, 1), 1);
- 
-      for iC = 1:size(interv, 1)
-        
-        actT = (interv(iC,1):interv(iC,2))';
-        
-        tmp = 0;
-        for j = 1:length(actT)
-          
-          % Pozor tu musim parsrovat segmenty
-          tmp = tmp + (obj.prepObj.getTable.Deseasonal(actT(j)) - meanVec(iC))^2;
-        end
-        
-        cost(iC,1) = tmp / length(actT);
-      end
-      
-      % .beta*f(m)
-      mN = height(obj.prepObj.getTable);
-      mV = var(obj.prepObj.getTable.Detrend);
-      for i = 1:size(interv,1)
-        
-        mD = i;
-        MAL = 2.0 * mV * mD/mN;
-        BIC = mV * mD/mN * log(mN);
-        PEN = mV * mD/mN * (2.0 * log(mN / mD) + 5.0);
-      
-%        fprintf('N/Var/Malows/BIC/PEN: %4.0f  %4.10f  %4.10f  %4.10f  %4.10f\n\n', ... 
-%          mN, mV, MAL, BIC, PEN)
-      end
-      
-      %format long
-      crit = cost + BIC;
-      
-      %disp([crit, interv])
-      %disp(["min: ", min(crit)])
-      
-      % .zisti si min(crit)
-      minCritIdx = find(crit == min(crit));
-      optNumChp = minCritIdx - 1;
-      optChpIdx = origChpIdx(1:optNumChp);
-      
-      src.sinks.segmentPlot(obj.prepObj.getTable.Detrend, ...
-        obj.prepObj.getTable.Mjd,...
-        optChpIdx, "mXlabel", "Time [MJD]");
-      
-      
-      % .Jaruskova
-      %disp(length(origChpIdx))
-      %[a, b] = mchpnewopr2015(obj.prepObj.getTable.Deseasonal, length(origChpIdx))
-      %}
       % .get class version
       [obj.chpVers, obj.chpLastUpd] = obj.chpObj.getVersion();
     end
     
+    % .prepare data for change point analysis
     function prepData(obj)
       
       obj.prepObj = src.fileIO.prepareData(obj.VAL, 'YMD', obj.YMD, 'HMS', obj.HMS);
       [obj.prepDataVers, obj.prepDataLastUpd] = obj.prepObj.getVersion();
     end
     
+    % .load data
     function loadData(obj)
-      
       
       dataFolderPath = fullfile(pwd, obj.FoldName);
       dataReaderObj = src.fileIO.dataReader(obj.FileName, dataFolderPath);

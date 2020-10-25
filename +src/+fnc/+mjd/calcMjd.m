@@ -1,3 +1,26 @@
+% Founder Michal Elias
+%
+% Details
+%  .calcMjd returns mjd (Modified Julian Date) values. 
+%
+% Inputs
+%  .Y (int32) index of Year
+%  .M (int32) index of Month
+%  .D (int32) index of Day
+%  .h (int32) index of Hour
+%  .m (int32) index of Minute
+%  .s (double) index of Second
+%
+% Output
+%  .mjd (double)
+%
+% Syntax
+%  res = calcMjd(Y, M, D, h, m, s)
+%
+% Examples
+%
+% Reference
+
 function mjd = calcMjd(Y, M, D, h, m, s)
   
   % Version [0 0 1] get mjd calculated from Y, M, D, h, m, s
@@ -9,7 +32,7 @@ function mjd = calcMjd(Y, M, D, h, m, s)
   end
   
   %{
-  %TODO asserty
+  %TODO asserts???
   assert(Y <= 2049 || Y >= 1900)
   assert(M < 1 || M > 12)
   assert(D < 1 || D > 31)
@@ -19,6 +42,7 @@ function mjd = calcMjd(Y, M, D, h, m, s)
   %}
   
   if M <= 2
+    
      Y = Y - 1;
      M = M + 12;
   end

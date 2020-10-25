@@ -1,29 +1,36 @@
+% Founder Michal Elias
+%
+% Details
+%  .dataReader covers a functionalities for original data reading
+
 classdef dataReader < handle
   
   % Always set actual version
-  % Version [0 0 1] 04.2020 Function data loading: able to lead data format:YYYY-MM-DD hh:mm:ss
+  % Version [0 0 1] 04.2020 Function data loading: able to load the data in format:
+  % YYYY-MM-DD hh:mm:ss
+  
   properties(Constant)
     
     Version = "[0 0 1]";
     
-    LastUpdate = "2020-05-07";
+    LastUpdate = "2020-04-07";
   end
   
   properties (Access=protected)
     
-    %> @details Data format
+    % @details Data format
     DataFormat;
     
-    %> @details Path to data file
+    % @details Path to data file
     FilePath;
     
-    %> @details YMD (year mon day) cell array
+    % @details YMD (year mon day) cell array
     YMD;
     
-    %> @details HMS (hour min sec) cell array
+    % @details HMS (hour min sec) cell array
     HMS;
     
-    %> @details VAL (values) double vector
+    % @details VAL (values) double vector
     VAL;
     
   end
@@ -31,8 +38,11 @@ classdef dataReader < handle
   
   methods (Access = public)
     
-    %> @brief class constructor
-    %> @details
+    % details: class constructor
+    % inputs: 
+    %  fileName (string) input file name
+    %  filePath (string) path to input file
+    %  dataFmt (string) data format
     function obj = dataReader(fileName, filePath, dataFmt)
       
       narginchk(2,3);
@@ -45,6 +55,8 @@ classdef dataReader < handle
       else
         obj.DataFormat = dataFmt;
       end
+      % todo: data format is not used yet. However, there is a space for preparing the code for 
+      % differnet input data formats.
       
       % Check fileName existance in the filePath folder
       obj.checkFile(fileName, filePath);
@@ -61,7 +73,7 @@ classdef dataReader < handle
         
         if isempty(val)
           
-          error('(202): No data in the file!')
+          error('dataReader: No data in the file!')
         else
           
           obj.YMD = ymd;
@@ -71,7 +83,7 @@ classdef dataReader < handle
         
       else
         
-        error('(201): Can not open data file. FilePath is empty!')
+        error('dataReader: Can not open data file. FilePath is empty!')
       end
     end
     
@@ -80,14 +92,12 @@ classdef dataReader < handle
       
       ymdCell = obj.YMD;
     end
-    
-    
+        
     function hmsCell = getHMS(obj)
       
       hmsCell = obj.HMS;
     end
-    
-    
+        
     function valVec = getVal(obj)
       
       valVec = obj.VAL;
@@ -115,14 +125,14 @@ classdef dataReader < handle
       
       if ~exist(filePath, 'dir')
         
-        error('(203)::Folder "%s" does not exist!', filePath);
+        error('(dataReader::Folder "%s" does not exist!', filePath);
       else
         
         fileNamePath = fullfile(filePath, fileName);
         
         if ~exist(fileNamePath, 'file')
           
-          error('(204)::File "%s" does not exist!', fileName);
+          error('dataReader::File "%s" does not exist!', fileName);
         else
           
           obj.FilePath = fileNamePath;
@@ -132,9 +142,3 @@ classdef dataReader < handle
   end % end of proteced methods
   
 end % classdef
-
-%% HISTORY:
-% --------------------------------------------------------------------------------------------------
-%  18.04.2020 MEL
-%  File development
-% --------------------------------------------------------------------------------------------------

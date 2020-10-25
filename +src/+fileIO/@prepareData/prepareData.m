@@ -1,3 +1,8 @@
+% Founder Michal Elias
+%
+% Details
+%  .prepareData covers a functionalities for data preparing into the matlab table format
+
 classdef prepareData < handle
   
   % Always set actual version
@@ -33,7 +38,12 @@ classdef prepareData < handle
   
   methods (Access=public)
     
-    %> @details class constructor
+    % class constructor
+    % inputs: 
+    %  val (double) input data vector
+    %  arguments
+    %    ymd (double) option data vector
+    %    hms (double) option data vector
     function obj = prepareData(val, options)
       
       arguments
@@ -208,4 +218,4 @@ classdef prepareData < handle
     end
   end
   
-end
+end %classdef

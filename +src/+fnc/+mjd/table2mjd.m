@@ -1,3 +1,26 @@
+% Founder Michal Elias
+%
+% Details
+%  .table2mjd returns mjd (Modified Julian Date) values. 
+%
+% Inputs
+%  .Y (int32) index of Year
+%  .M (int32) index of Month
+%  .D (int32) index of Day
+%  .h (int32) index of Hour
+%  .m (int32) index of Minute
+%  .s (int32) index of Second
+%
+% Output
+%  .mjd (double)
+%
+% Syntax
+%  res = calcMjd(Y, M, D, h, m, s)
+%
+% Examples
+%
+% Reference
+
 function dmjdVec = table2mjd(inpTable)
 
   % Version [0 0 1] get mjd calculated from table format
